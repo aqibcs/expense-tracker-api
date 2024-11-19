@@ -10,6 +10,10 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
+    # Email reset URLs
+    path('password-reset/', views.password_reset, name='password_reset'),
+    path('reset/<uidb64>/<token>/', views.password_reset_confirm, name='password_reset_confirm'),
+
     # Expense Management
     path('expenses/', views.create_expense, name='create_expense'),  # POST: create a new expense
     path('expenses/list/', views.list_expenses, name='list_expenses'),  # GET: list all expenses
