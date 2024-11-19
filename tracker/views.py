@@ -6,9 +6,16 @@ from django.contrib.auth import authenticate
 from django.utils.dateparse import parse_date
 from django.db.models import Sum
 from rest_framework_simplejwt.tokens import RefreshToken
-from .forms import UserLoginForm, UserRegistrationForm
+from .forms import UserLoginForm, UserRegistrationForm, PasswordResetForm, SetNewpasswordForm
 from .models import Expense
 from .serializers import ExpenseSerializer
+from django.contrib.auth.models import User
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
+from django.urls import reverse
+from django.core.mail import send_mail
+from finance_tracker import settings
 
 
 # Function to generate JWT tokens for authenticated users
@@ -83,6 +90,50 @@ def profile(request):
     """
     user = request.user
     return Response({"username": user.username}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def password_reset(request):
+    email_form = PasswordResetForm(data=request.data)
+    if email_form.is_valid():
+        email = email_form.cleaned_data['email']
+        user = User.objects.get(email=email)
+
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        reset_link = request.build_absolute_uri(
+            reverse('password_reset_confirm', kwargs={"uidb64": uid, "token": token})
+        )
+
+        subject = 'Password Reset Request'
+        message = (
+            f'Hello {user.username}, \n\n'
+            'You requested a password reset. Click the link below to reset your password:\n'
+            f'{reset_link}\n\n'
+            'Thank You!\n\n'
+            'If you did not request this change, please ignore this message.')
+        send_mail(subject,
+                  message,
+                  settings.EMAIL_HOST_USER, [email],
+                  fail_silently=False)
+        return Response({'message': "Password reset email sent."},
+                        status=status.HTTP_200_OK)
+
+    return Response(email_form.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def password_reset_confirm(request, uidb64, token):
+    form = SetNewpasswordForm(data=request.data, uidb64=uidb64, token=token)
+
+    if form.is_valid():
+        form.save()
+        return Response({"message": "Password has been reset successfully."},
+                        status=status.HTTP_200_OK)
+    return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
