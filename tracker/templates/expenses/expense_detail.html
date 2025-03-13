@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Expense Details - Finance Tracker{% endblock %}
+{% block page_title %}Expense Details{% endblock %}
+
+{% block content %}
+<div class="detail-actions">
+    <a href="{% url 'list_expenses' %}" class="btn btn-outline">
+        <svg xmlns="http://www.w3.org/2000/svg" class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Back to Expenses
+    </a>
+    <div>
+        <a href="{% url 'update_expense' expense.id %}" class="btn btn-outline">
+            <svg xmlns="http://www.w3.org/2000/svg" class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            Edit
+        </a>
+        <button class="btn btn-danger delete-expense" data-id="{{ expense.id }}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            Delete
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="expense-header">
+            <div class="expense-amount">
+                <span class="currency">$</span>
+                <span class="value">{{ expense.amount|floatformat:2 }}</span>
+            </div>
+            <span class="category-badge category-{{ expense.category|lower }}">
+                {{ expense.category }}
+            </span>
+        </div>
+        
+        <div class="expense-details">
+            <div class="detail-item">
+                <div class="detail-label">Date</div>
+                <div class="detail-value">{{ expense.date|date:"F j, Y" }}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">Description</div>
+                <div class="detail-value">{{ expense.description|default:"No description provided." }}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">Created</div>
+                <div class="detail-value">{{ expense.created_at|date:"F j, Y, g:i a" }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal" id="deleteModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Delete Expense</h3>
+                <button type="button" class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this expense? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" id="cancelDelete">Cancel</button>
+                <form id="deleteForm" method="post" action="{% url 'delete_expense' expense.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
