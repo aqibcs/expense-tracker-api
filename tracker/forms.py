@@ -4,6 +4,8 @@ from django.core.exceptions import ValidationError
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
 
+from tracker.models import Expense
+
 
 class UserRegistrationForm(forms.ModelForm):
     password1 = forms.CharField(label="Password", widget=forms.PasswordInput)
@@ -16,12 +18,13 @@ class UserRegistrationForm(forms.ModelForm):
 
     def clean_username(self):
         """
-        Validate that the username is unique and doesn't already exist in the system.
+        Validate that the username is unique.
         """
         username = self.cleaned_data.get('username')
         if User.objects.filter(username=username).exists():
             raise ValidationError(
-                'Username already exists. Please choose a different one')
+                'Username already exists. Please choose a different one'
+            )
         return username
 
     def clean_password2(self):
@@ -31,7 +34,7 @@ class UserRegistrationForm(forms.ModelForm):
         password1 = self.cleaned_data.get("password1")
         password2 = self.cleaned_data.get("password2")
         if password1 and password2 and password1 != password2:
-            raise ValidationError("Passwords don't match")
+            raise ValidationError("Passwords don't match.")
         return password2
 
 
@@ -44,46 +47,42 @@ class UserLoginForm(forms.Form):
 
 
 class PasswordResetForm(forms.Form):
+    """
+    Form for requesting a password reset link via email.
+    """
     email = forms.EmailField()
 
     def clean_email(self):
+        """
+        Validate that the email exists in the system.
+        """
         email = self.cleaned_data.get('email')
         if not User.objects.filter(email=email).exists():
             raise ValidationError("This email is not registered.")
         return email
 
 
-class SetNewpasswordForm(forms.Form):
-    new_password = forms.CharField(widget=forms.PasswordInput,
-                                   label="New Password")
-    confirm_password = forms.CharField(widget=forms.PasswordInput,
-                                       label="Confirm New Password")
+class SetNewPasswordForm(forms.Form):
+    new_password1 = forms.CharField(widget=forms.PasswordInput, label="New Password")
+    new_password2 = forms.CharField(widget=forms.PasswordInput, label="Confirm New Password")
 
-    def __init__(self, *args, **kwargs):
-        self.uidb64 = kwargs.pop('uidb64', None)
-        self.token = kwargs.pop('token', None)
-        super().__init__(*args, **kwargs)
+    def clean(self):
+        cleaned_data = super().clean()
+        new_password1 = cleaned_data.get("new_password1")
+        new_password2 = cleaned_data.get("new_password2")
 
-    def save(self):
-        cleaned_data = super.clean()
-        new_password = cleaned_data.get('new_password')
-        confirm_password = cleaned_data.get('confirm_password')
-
-        if new_password != confirm_password:
-            raise ValidationError("Password don't match.")
+        if new_password1 and new_password2 and new_password1 != new_password2:
+            raise ValidationError("Passwords don't match.")
         return cleaned_data
 
-    def save(self):
-        try:
-            uid = urlsafe_base64_decode(self.uidb64).decode()
-            user = User.objects.get(pk=uid)
-        except (TypeError, User.DoesNotExist):
-            raise ValidationError("Invalid user.")
 
-        # Verify token
-        if not default_token_generator.check_token(user, self.token):
-            raise ValidationError("Invalid or expired token.")
-
-        user.set_password(self.cleaned_data['new_password'])
-        user.save()
-        return user
+class ExpenseForm(forms.ModelForm):
+    class Meta:
+        model = Expense
+        fields = ['category', 'amount', 'description', 'date']
+        widgets = {
+            'category': forms.Select(attrs={'class': 'form-control'}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control'}),
+            'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
