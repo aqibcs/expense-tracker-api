@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% block title %}My Expenses - Finance Tracker{% endblock %}
+{% block page_title %}My Expenses{% endblock %}
+
+{% block content %}
+<div class="expense-controls">
+    <div class="flex-row">
+        <a href="{% url 'create_expense' %}" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Expense
+        </a>
+        
+        <button class="btn btn-outline" id="filterToggle">
+            <svg xmlns="http://www.w3.org/2000/svg" class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+            </svg>
+            Filter
+        </button>
+    </div>
+    
+    <form method="get" id="filterForm" class="filter-form" {% if not request.GET.start_date and not request.GET.end_date and not request.GET.category %}style="display: none;"{% endif %}>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="id_start_date">Start Date</label>
+                <input type="date" name="start_date" id="id_start_date" value="{{ request.GET.start_date }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="id_end_date">End Date</label>
+                <input type="date" name="end_date" id="id_end_date" value="{{ request.GET.end_date }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="id_category">Category</label>
+                <select name="category" id="id_category">
+                    <option value="">All Categories</option>
+                    <option value="Food" {% if request.GET.category == 'Food' %}selected{% endif %}>Food</option>
+                    <option value="Transportation" {% if request.GET.category == 'Transportation' %}selected{% endif %}>Transportation</option>
+                    <option value="Housing" {% if request.GET.category == 'Housing' %}selected{% endif %}>Housing</option>
+                    <option value="Utilities" {% if request.GET.category == 'Utilities' %}selected{% endif %}>Utilities</option>
+                    <option value="Entertainment" {% if request.GET.category == 'Entertainment' %}selected{% endif %}>Entertainment</option>
+                    <option value="Healthcare" {% if request.GET.category == 'Healthcare' %}selected{% endif %}>Healthcare</option>
+                    <option value="Shopping" {% if request.GET.category == 'Shopping' %}selected{% endif %}>Shopping</option>
+                    <option value="Personal" {% if request.GET.category == 'Personal' %}selected{% endif %}>Personal</option>
+                    <option value="Education" {% if request.GET.category == 'Education' %}selected{% endif %}>Education</option>
+                    <option value="Other" {% if request.GET.category == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+                <a href="{% url 'list_expenses' %}" class="btn btn-outline btn-sm">Clear</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Expense History</h2>
+        <div class="card-actions">
+            <button class="btn btn-icon" id="exportBtn" title="Export to CSV">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+            </button>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        {% if expenses %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for expense in expenses %}
+                    <tr>
+                        <td>{{ expense.date|date:"M d, Y" }}</td>
+                        <td>
+                            <span class="category-badge category-{{ expense.category|lower }}">
+                                {{ expense.category }}
+                            </span>
+                        </td>
+                        <td>{{ expense.description|default:"--" }}</td>
+                        <td class="amount">${{ expense.amount|floatformat:2 }}</td>
+                        <td class="actions">
+                            <a href="{% url 'get_expense' expense.id %}" class="btn-icon" title="View">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </a>
+                            <a href="{% url 'update_expense' expense.id %}" class="btn-icon" title="Edit">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                            </a>
+                            <button class="btn-icon delete-expense" data-id="{{ expense.id }}" title="Delete">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+            </div>
+            <h3>No expenses found</h3>
+            <p>You haven't added any expenses yet. Start tracking your spending by adding an expense.</p>
+            <a href="{% url 'create_expense' %}" class="btn btn-primary">Add Your First Expense</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal" id="deleteModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Delete Expense</h3>
+                <button type="button" class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this expense? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" id="cancelDelete">Cancel</button>
+                <form id="deleteForm" method="post" action="">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

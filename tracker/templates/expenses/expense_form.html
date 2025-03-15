@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}{% if expense %}Edit Expense{% else %}Add Expense{% endif %} - Finance Tracker{% endblock %}
+{% block page_title %}{% if expense %}Edit Expense{% else %}Add Expense{% endif %}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <form method="post" class="expense-form">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="id_amount">Amount</label>
+                    <div class="input-wrapper">
+                        <span class="currency-symbol">$</span>
+                        <input type="number" name="amount" id="id_amount" step="0.01" min="0.01" 
+                               value="{{ expense.amount|default:'' }}" placeholder="0.00" required>
+                    </div>
+                    {% if form.amount.errors %}
+                    <div class="error-message">{{ form.amount.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_date">Date</label>
+                    <input type="date" name="date" id="id_date" value="{{ expense.date|date:'Y-m-d'|default:today }}" required>
+                    {% if form.date.errors %}
+                    <div class="error-message">{{ form.date.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="id_category">Category</label>
+                <select name="category" id="id_category" required>
+                    <option value="" disabled {% if not expense %}selected{% endif %}>Select a category</option>
+                    <option value="Food" {% if expense.category == 'Food' %}selected{% endif %}>Food</option>
+                    <option value="Transportation" {% if expense.category == 'Transportation' %}selected{% endif %}>Transportation</option>
+                    <option value="Housing" {% if expense.category == 'Housing' %}selected{% endif %}>Housing</option>
+                    <option value="Utilities" {% if expense.category == 'Utilities' %}selected{% endif %}>Utilities</option>
+                    <option value="Entertainment" {% if expense.category == 'Entertainment' %}selected{% endif %}>Entertainment</option>
+                    <option value="Healthcare" {% if expense.category == 'Healthcare' %}selected{% endif %}>Healthcare</option>
+                    <option value="Shopping" {% if expense.category == 'Shopping' %}selected{% endif %}>Shopping</option>
+                    <option value="Personal" {% if expense.category == 'Personal' %}selected{% endif %}>Personal</option>
+                    <option value="Education" {% if expense.category == 'Education' %}selected{% endif %}>Education</option>
+                    <option value="Other" {% if expense.category == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+                {% if form.category.errors %}
+                <div class="error-message">{{ form.category.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="id_description">Description</label>
+                <textarea name="description" id="id_description" rows="3" placeholder="Add details about this expense">{{ expense.description|default:'' }}</textarea>
+                {% if form.description.errors %}
+                <div class="error-message">{{ form.description.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    {% if expense %}Save Changes{% else %}Add Expense{% endif %}
+                </button>
+                <a href="{% url 'list_expenses' %}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
